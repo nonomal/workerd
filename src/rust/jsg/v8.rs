@@ -25,19 +25,6 @@ pub mod ffi {
         Error,
     }
 
-    /// Module visibility level, corresponds to `workerd::jsg::ModuleType` from modules.capnp.
-    /// Values are automatically assigned by `cxx` because of extern declaration below.
-    #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-    #[repr(u16)]
-    enum ModuleType {
-        BUNDLE,
-        BUILTIN,
-        INTERNAL,
-    }
-    unsafe extern "C++" {
-        type ModuleType;
-    }
-
     unsafe extern "C++" {
         include!("workerd/rust/jsg/ffi.h");
 
@@ -149,13 +136,22 @@ pub mod ffi {
             isolate: *mut Isolate,
             resource: usize,      /* R* */
             constructor: &Global, /* v8::Global<FunctionTemplate> */
-            drop_callback: usize, /* R* -> () */
         ) -> Local /* v8::Local<Value> */;
 
         pub unsafe fn unwrap_resource(
             isolate: *mut Isolate,
             value: Local, /* v8::LocalValue */
         ) -> usize /* R* */;
+    }
+
+    /// Module visibility level, mirroring workerd::jsg::ModuleType from modules.capnp.
+    ///
+    /// CXX shared enums cannot reference existing C++ enums, so we define matching values here.
+    /// The conversion to workerd::jsg::ModuleType happens in jsg.h's RustModuleRegistry.
+    enum ModuleType {
+        Bundle = 0,
+        Builtin = 1,
+        Internal = 2,
     }
 
     unsafe extern "C++" {

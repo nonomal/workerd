@@ -124,6 +124,11 @@ void TestHarness::set_global(::rust::Str name, ::workerd::rust::jsg::Local value
   });
 }
 
+void request_gc(Isolate* isolate) {
+  isolate->RequestGarbageCollectionForTesting(
+      v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
+}
+
 }  // namespace rust::jsg_test
 
 }  // namespace workerd

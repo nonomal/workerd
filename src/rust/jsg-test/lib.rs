@@ -40,6 +40,13 @@ mod ffi {
 
         #[cxx_name = "set_global"]
         pub fn set_global_safe(self: &EvalContext, name: &str, value: Local);
+
+        /// Triggers a full garbage collection for testing purposes.
+        /// Note: For GC to actually collect objects, they must not be reachable from the
+        /// current HandleScope.
+        #[expect(clippy::allow_attributes)] // Only used in tests, but #[expect(dead_code)] fails during test builds
+        #[allow(dead_code)]
+        pub unsafe fn request_gc(isolate: *mut Isolate);
     }
 }
 
