@@ -172,9 +172,9 @@ size_t unwrap_resource(Isolate* isolate, Local value) {
 }
 
 // Global<T>
-
-void global_drop(Global value) {
-  global_from_ffi<v8::Value>(kj::mv(value));
+void global_reset(Global* value) {
+  auto* glbl = global_as_ref_from_ffi<v8::Value>(*value);
+  glbl->Reset();
 }
 
 Global global_clone(const Global& value) {

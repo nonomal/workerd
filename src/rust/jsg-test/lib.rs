@@ -63,6 +63,13 @@ impl Harness {
     pub fn run_in_context(&self, callback: fn(*mut v8::ffi::Isolate, Pin<&mut EvalContext>)) {
         unsafe { self.0.run_in_context(callback) }
     }
+
+    /// Triggers a full garbage collection for testing purposes.
+    pub fn request_gc(lock: &mut jsg::Lock) {
+        unsafe {
+            ffi::request_gc(lock.isolate().as_ffi());
+        }
+    }
 }
 
 impl Default for Harness {

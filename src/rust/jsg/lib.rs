@@ -362,9 +362,9 @@ pub trait ResourceTemplate {
 /// further Rust involvement after wrapping. This is analogous to `JSG_STRUCT` in C++ JSG.
 pub trait Struct: Type {}
 
-/// Per-context state for Rust resources exposed to JavaScript.
+/// Per-isolate state for Rust resources exposed to JavaScript.
 ///
-/// A Realm is created for each V8 context and stored in the context's embedder data. It holds
+/// A Realm is created for each V8 isolate and stored in the isolate's data slot. It holds
 /// cached function templates and tracks resource instances. When all Rust `Ref` handles to a
 /// resource are dropped, the V8 wrapper becomes weak and V8 GC will trigger cleanup via the
 /// weak callback.

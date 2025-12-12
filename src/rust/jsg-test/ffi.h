@@ -41,9 +41,6 @@ class TestHarness {
   // The callback receives both the isolate and a context that can be used with eval
   void run_in_context(::rust::Fn<void(Isolate*, EvalContext&)> callback) const;
 
-  // Sets a global variable on the context
-  void set_global(::rust::Str name, ::workerd::rust::jsg::Local value) const;
-
  private:
   mutable kj::Own<TestIsolate> isolate;
   mutable v8::Locker locker;
