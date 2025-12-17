@@ -71,10 +71,9 @@ pub struct MyResource {
 }
 ```
 
-For complex cases or custom tracing logic, you can manually implement `GarbageCollected`:
+For complex cases or custom tracing logic, you can manually implement `GarbageCollected` without using the jsg_resource macro:
 
 ```rust
-#[jsg_resource]
 pub struct CustomResource {
     data: String,
 }
