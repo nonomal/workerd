@@ -4,13 +4,11 @@
     // bazel_deps from deps.MODULE.bazel
     {
       "name": "ada-url",
-      "type": "bazel_dep",
-      "freeze_version": "3.3.0"
+      "type": "bazel_dep"
     },
     {
       "name": "brotli",
-      "type": "bazel_dep",
-      "freeze_version": "1.2.0"
+      "type": "bazel_dep"
     },
     {
       "name": "tcmalloc",
