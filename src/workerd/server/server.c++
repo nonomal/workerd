@@ -1701,7 +1701,9 @@ class RequestObserverWithTracer final: public RequestObserver, public WorkerInte
 
 class SequentialSpanSubmitter final: public SpanSubmitter {
  public:
-  SequentialSpanSubmitter(kj::Own<WorkerTracer> workerTracer): workerTracer(kj::mv(workerTracer)) {}
+  SequentialSpanSubmitter(kj::Own<WorkerTracer> workerTracer, kj::Own<SpanIdSource> spanIdSource)
+      : SpanSubmitter(kj::mv(spanIdSource)),
+        workerTracer(kj::mv(workerTracer)) {}
   void submitSpan(tracing::SpanId spanId, tracing::SpanId parentSpanId, const Span& span) override {
     // We largely recreate the span here which feels inefficient, but is hard to avoid given the
     // mismatch between the Span type and the full span information required for OTel.
@@ -1718,13 +1720,9 @@ class SequentialSpanSubmitter final: public SpanSubmitter {
     workerTracer->addSpan(kj::mv(span2));
   }
 
-  tracing::SpanId makeSpanId() override {
-    return tracing::SpanId(nextSpanId++);
-  }
   KJ_DISALLOW_COPY_AND_MOVE(SequentialSpanSubmitter);
 
  private:
-  uint64_t nextSpanId = 1;
   kj::Own<WorkerTracer> workerTracer;
 };
 
@@ -2172,8 +2170,8 @@ class Server::WorkerService final: public Service,
 
     KJ_IF_SOME(w, workerTracer) {
       w->setMakeUserRequestSpanFunc([&w = *w]() {
-        return SpanParent(kj::refcounted<UserSpanObserver>(
-            kj::refcounted<SequentialSpanSubmitter>(kj::addRef(w))));
+        return SpanParent(kj::refcounted<UserSpanObserver>(kj::refcounted<SequentialSpanSubmitter>(
+            kj::addRef(w), kj::heap<SequentialSpanIdSource>())));
       });
     }
     kj::Own<RequestObserver> observer =

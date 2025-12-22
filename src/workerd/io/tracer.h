@@ -179,10 +179,44 @@ class WorkerTracer final: public BaseTracer {
   kj::Maybe<kj::Own<tracing::TailStreamWriter>> maybeTailStreamWriter;
 };
 
+class SpanIdSource {
+ public:
+  SpanIdSource() = default;
+  KJ_DISALLOW_COPY(SpanIdSource);
+  virtual tracing::SpanId makeSpanId() = 0;
+};
+
+class RandomSpanIdSource final: public SpanIdSource {
+ public:
+  KJ_DISALLOW_COPY(RandomSpanIdSource);
+  tracing::SpanId makeSpanId() override;
+  RandomSpanIdSource(kj::EntropySource& entropySource);
+
+ private:
+  kj::EntropySource& entropySource;
+};
+
+class SequentialSpanIdSource final: public SpanIdSource {
+ public:
+  SequentialSpanIdSource() = default;
+  KJ_DISALLOW_COPY(SequentialSpanIdSource);
+  tracing::SpanId makeSpanId() override;
+
+ private:
+  uint64_t predictableSpanId = 1;
+};
+
 class SpanSubmitter: public kj::Refcounted {
  public:
+  SpanSubmitter(kj::Own<SpanIdSource> spanIdSource);
+  KJ_DISALLOW_COPY(SpanSubmitter);
   virtual void submitSpan(tracing::SpanId context, tracing::SpanId spanId, const Span& span) = 0;
-  virtual tracing::SpanId makeSpanId() = 0;
+  tracing::SpanId makeSpanId();
+
+ private:
+  // TODO(now): Having to make this a kj::Own results in a memory allocation we shouldn't need, but
+  // if we were to use a plain SpanIdSource it couldn't be an abstract class?
+  kj::Own<SpanIdSource> spanIdSource;
 };
 
 // The user tracing observer

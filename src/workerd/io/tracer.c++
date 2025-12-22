@@ -504,6 +504,21 @@ void WorkerTracer::setJsRpcInfo(const tracing::InvocationSpanContext& context,
   }
 }
 
+SpanSubmitter::SpanSubmitter(kj::Own<SpanIdSource> spanIdSource)
+    : spanIdSource(kj::mv(spanIdSource)) {}
+
+tracing::SpanId SpanSubmitter::makeSpanId() {
+  return spanIdSource->makeSpanId();
+}
+
+tracing::SpanId RandomSpanIdSource::makeSpanId() {
+  return tracing::SpanId::fromEntropy(entropySource);
+}
+
+tracing::SpanId SequentialSpanIdSource::makeSpanId() {
+  return tracing::SpanId(predictableSpanId++);
+}
+
 kj::Own<SpanObserver> UserSpanObserver::newChild() {
   return kj::refcounted<UserSpanObserver>(kj::addRef(*submitter), spanId);
 }
