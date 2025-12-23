@@ -16,6 +16,9 @@ use syn::parse_macro_input;
 /// Automatically implements `jsg::Type::class_name()` using the struct name,
 /// or a custom name if provided via the `name` parameter.
 ///
+/// # Panics
+/// Panics if applied to a struct with unnamed fields (tuple structs or unit structs).
+///
 /// # Example
 /// ```rust
 /// #[jsg::struct]
@@ -29,9 +32,6 @@ use syn::parse_macro_input;
 ///     pub value: String,
 /// }
 /// ```
-///
-/// # Panics
-/// Panics if applied to non-struct items or structs without named fields.
 #[proc_macro_attribute]
 pub fn jsg_struct(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as DeriveInput);
@@ -330,14 +330,12 @@ fn generate_unwrap_code(
 /// 1. On a struct - generates `jsg::Type`, Wrapper, and `ResourceTemplate` implementations
 /// 2. On an impl block - scans for `#[jsg::method]` and generates `Resource` trait implementation
 ///
-/// Automatically implements `jsg::Type::class_name()` using the struct name,
-/// or a custom name if provided via the `name` parameter.
-///
 /// The generated `GarbageCollected` implementation automatically traces fields that
 /// need GC integration:
 /// - `Ref<T>` fields - traces the underlying resource
 /// - `TracedReference<T>` fields - traces the JavaScript handle
 /// - `Option<T>` where T is traceable - conditionally traces
+/// - `RefCell<Option<Ref<T>>>` - supports cyclic references through interior mutability
 ///
 /// # Example
 /// ```rust
@@ -359,9 +357,6 @@ fn generate_unwrap_code(
 ///     }
 /// }
 /// ```
-///
-/// # Panics
-/// Panics if applied to items other than structs or impl blocks.
 #[proc_macro_attribute]
 pub fn jsg_resource(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Try to parse as an impl block first
@@ -531,7 +526,7 @@ fn generate_trace_statements(
                     TraceableType::Ref => {
                         return Some(quote! {
                             if let Some(ref inner) = self.#field_name {
-                                (&*inner).trace(visitor);
+                                visitor.visit_ref(inner);
                             }
                         });
                     }
@@ -555,7 +550,7 @@ fn generate_trace_statements(
 
             match get_traceable_type(ty) {
                 TraceableType::Ref => Some(quote! {
-                    jsg::GarbageCollected::trace(&*self.#field_name, visitor);
+                    visitor.visit_ref(&self.#field_name);
                 }),
                 TraceableType::WeakRef => Some(quote! {
                     self.#field_name.trace(visitor);
@@ -655,7 +650,8 @@ fn extract_name_attribute(attr_str: &str) -> Option<String> {
         .map(str::to_owned)
 }
 
-fn snake_to_camel_case(s: &str) -> String {
+/// Converts `snake_case` to `camelCase`.
+pub(crate) fn snake_to_camel_case(s: &str) -> String {
     let mut result = String::new();
     let mut capitalize_next = false;
 

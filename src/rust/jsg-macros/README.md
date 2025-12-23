@@ -58,6 +58,7 @@ Resources are automatically integrated with V8's cppgc garbage collector. The ma
 - `Ref<T>` fields - traces the underlying resource
 - `TracedReference<T>` fields - traces the JavaScript handle
 - `Option<Ref<T>>` and `Option<TracedReference<T>>` - conditionally traces
+- `RefCell<Option<Ref<T>>>` - supports cyclic references through interior mutability
 
 ```rust
 #[jsg_resource]
@@ -68,6 +69,13 @@ pub struct MyResource {
 
     // Not traced (plain data)
     name: String,
+}
+
+// Cyclic references using RefCell
+#[jsg_resource]
+pub struct Node {
+    name: String,
+    next: RefCell<Option<Ref<Node>>>,
 }
 ```
 

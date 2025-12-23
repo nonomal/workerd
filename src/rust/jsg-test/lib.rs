@@ -11,7 +11,6 @@ mod ffi {
     #[namespace = "workerd::rust::jsg"]
     unsafe extern "C++" {
         include!("workerd/rust/jsg/ffi.h");
-
         type Isolate = jsg::v8::ffi::Isolate;
         type Local = jsg::v8::ffi::Local;
     }
@@ -25,7 +24,6 @@ mod ffi {
 
     unsafe extern "C++" {
         include!("workerd/rust/jsg-test/ffi.h");
-
         type TestHarness;
         type EvalContext;
 
@@ -64,7 +62,6 @@ impl Harness {
         unsafe { self.0.run_in_context(callback) }
     }
 
-    /// Triggers a full garbage collection for testing purposes.
     pub fn request_gc(lock: &mut jsg::Lock) {
         unsafe {
             ffi::request_gc(lock.isolate().as_ffi());
@@ -77,3 +74,4 @@ impl Default for Harness {
         Self::new()
     }
 }
+
