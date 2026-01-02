@@ -156,7 +156,7 @@ jsg::Ref<Socket> setupSocket(jsg::Lock& js,
 
   auto refcountedConnection = kj::refcountedWrapper(kj::mv(connection));
   // Initialize the readable/writable streams with the readable/writable sides of an AsyncIoStream.
-  auto sysStreams = newSystemMultiStream(refcountedConnection->addWrappedRef(), ioContext);
+  auto sysStreams = newSystemMultiStream(*refcountedConnection, ioContext);
   auto readable = js.alloc<ReadableStream>(ioContext, kj::mv(sysStreams.readable));
   auto allowHalfOpen = getAllowHalfOpen(options);
   kj::Maybe<jsg::Promise<void>> eofPromise;
@@ -278,7 +278,13 @@ jsg::Ref<Socket> connectImpl(jsg::Lock& js,
 }
 
 jsg::Promise<void> Socket::close(jsg::Lock& js) {
-  if (isClosing) {
+  // Avoid running through the socket closure steps if they have already been executed, or if
+  // the closed promise has been resolved for another reason (like via takeConnectionStream).
+  auto closedState = closedPromiseCopy.getState(js);
+  bool alreadyResolved = closedState == jsg::Promise<void>::State::FULFILLED ||
+      closedState == jsg::Promise<void>::State::REJECTED;
+
+  if (isClosing || alreadyResolved) {
     return closedPromiseCopy.whenResolved(js);
   }
 
@@ -307,7 +313,22 @@ jsg::Promise<void> Socket::close(jsg::Lock& js) {
     });
   })
       .then(js, [this](jsg::Lock& js) {
+    // Aborting the readable/writable streams above does not in fact shutdown the underlying
+    // AsyncIoStream, so we do so here.
+    connectionStream->getWrapped().shutdownWrite();
+    connectionStream->getWrapped().abortRead();
+
     resolveFulfiller(js, kj::none);
+
+    // Before we can destroy the connection stream we need to detach the readable/writable streams
+    // to release their underlying sources/sinks, which hold references to the AsyncIoStream
+    // through the RefcountedWrapper.
+    writable->detach(js);
+    readable->detach(js, true);
+
+    // Destroy the connection stream.
+    connectionStream = nullptr;
+
     return js.resolvedPromise();
   }).catch_(js, [this](jsg::Lock& js, jsg::Value err) { errorHandler(js, kj::mv(err)); });
 }
@@ -387,9 +408,15 @@ jsg::Ref<Socket> Socket::startTls(jsg::Lock& js, jsg::Optional<TlsOptions> tlsOp
                   };
                 }));
 
+                // Move the stream out of the plain text socket, to ensure the stream is properly
+                // destroyed when the socket is closed.
+                IoOwn<kj::RefcountedWrapper<kj::Own<kj::AsyncIoStream>>> wrapper =
+                    kj::mv(self->connectionStream);
+
                 auto secureStream = forkedPromise.addBranch().then(
-                    [stream = self->connectionStream->addWrappedRef()]() mutable
-                    -> kj::Own<kj::AsyncIoStream> { return kj::mv(stream); });
+                    [stream = wrapper->addWrappedRef()]() mutable -> kj::Own<kj::AsyncIoStream> {
+                  return kj::mv(stream);
+                });
 
                 return kj::newPromisedStream(kj::mv(secureStream));
               })));
@@ -524,8 +551,14 @@ kj::Own<kj::AsyncIoStream> Socket::takeConnectionStream(jsg::Lock& js) {
   writable->detach(js);
   readable->detach(js, true);
 
+  // Move the stream out of the socket, to ensure the stream is properly destroyed when the
+  // caller is done with it.
+  IoOwn<kj::RefcountedWrapper<kj::Own<kj::AsyncIoStream>>> wrapper = kj::mv(connectionStream);
+
   closedResolver.resolve(js);
-  return connectionStream->addWrappedRef();
+
+  // Get a new reference to the wrapped stream via refcounting
+  return wrapper->addWrappedRef();
 }
 
 // Implementation of the custom factory for creating WorkerInterface instances from a socket
