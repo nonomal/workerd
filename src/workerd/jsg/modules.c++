@@ -4,6 +4,7 @@
 
 #include "jsg.h"
 #include "setup.h"
+#include "util.h"
 
 #include <v8-wasm.h>
 
@@ -527,7 +528,19 @@ JsValue ModuleRegistry::requireImpl(Lock& js, ModuleInfo& info, RequireImplOptio
         js.v8Context(), v8StrIntern(js.v8Isolate, "default"))));
   }
 
-  return JsValue(module->GetModuleNamespace());
+  // Return a cached mutable wrapper around the module namespace to match Node.js behavior
+  // where require() returns objects with writable properties. This allows frameworks
+  // like Next.js to patch built-in module exports.
+  // The wrapper is cached so that multiple require() calls return the same object,
+  // enabling mutations to be shared.
+  // See: https://github.com/cloudflare/workerd/issues/5844
+  KJ_IF_SOME(cached, info.maybeMutableExports) {
+    return JsValue(cached.getHandle(js));
+  }
+  auto mutableExports =
+      createMutableModuleExports(js, module->GetModuleNamespace().As<v8::Object>());
+  info.maybeMutableExports = V8Ref<v8::Object>(js.v8Isolate, mutableExports);
+  return JsValue(mutableExports);
 }
 
 }  // namespace workerd::jsg

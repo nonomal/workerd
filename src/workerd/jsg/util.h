@@ -537,6 +537,16 @@ struct Unimplemented {};
 using WontImplement = Unimplemented;
 
 // ======================================================================================
+// Module utilities
+
+// Creates a mutable copy of a module namespace object for CommonJS compatibility.
+// This is needed because ES module namespaces have read-only properties, but
+// CommonJS require() is expected to return objects with mutable properties.
+// This matches Node.js behavior when requiring an ESM module from CJS.
+// See: https://github.com/cloudflare/workerd/issues/5844
+v8::Local<v8::Object> createMutableModuleExports(Lock& js, v8::Local<v8::Object> moduleNamespace);
+
+// ======================================================================================
 // Node.js Compat
 
 kj::Maybe<kj::String> checkNodeSpecifier(kj::StringPtr specifier);

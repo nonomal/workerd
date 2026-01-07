@@ -21,7 +21,7 @@ export const doTheTest = {
 
     const assert = await import('node:assert');
     const required = require('node:assert');
-    strictEqual(assert, required);
+    strictEqual(assert.default, required.default);
 
     throws(() => require('invalid'), {
       message: 'Top-level await in module is not permitted at this time.',

@@ -849,6 +849,26 @@ v8::Local<v8::String> newExternalTwoByteString(Lock& js, kj::ArrayPtr<const uint
 }
 
 // ======================================================================================
+// Module utilities
+
+v8::Local<v8::Object> createMutableModuleExports(Lock& js, v8::Local<v8::Object> moduleNamespace) {
+  auto context = js.v8Context();
+  auto isolate = js.v8Isolate;
+  auto mutableExports = v8::Object::New(isolate);
+  auto propertyNames =
+      check(moduleNamespace->GetPropertyNames(context, v8::KeyCollectionMode::kOwnOnly,
+          static_cast<v8::PropertyFilter>(v8::ALL_PROPERTIES), v8::IndexFilter::kIncludeIndices));
+
+  for (uint32_t i = 0; i < propertyNames->Length(); i++) {
+    auto name = check(propertyNames->Get(context, i));
+    auto value = check(moduleNamespace->Get(context, name));
+    check(mutableExports->Set(context, name, value));
+  }
+
+  return mutableExports;
+}
+
+// ======================================================================================
 // Node.js Compat
 
 namespace {

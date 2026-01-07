@@ -445,17 +445,43 @@ class IsolateModuleRegistry final {
     RETURN_EMPTY,
   };
 
+  // Helper method to get or create a mutable exports wrapper for a module.
+  // This is needed because ES module namespaces have read-only properties, but
+  // CommonJS require() is expected to return objects with mutable properties.
+  // This matches Node.js behavior when requiring an ESM module from CJS.
+  // See: https://github.com/cloudflare/workerd/issues/5844
+  v8::Local<v8::Object> getOrCreateMutableExports(Lock& js, v8::Local<v8::Module> module) {
+    int moduleHash = module->GetIdentityHash();
+
+    // Check if we already have a cached mutable wrapper
+    KJ_IF_SOME(cached, mutableExportsCache.find(moduleHash)) {
+      return cached.getHandle(js);
+    }
+
+    // Create a new mutable wrapper from the module namespace
+    auto moduleNamespace = module->GetModuleNamespace().As<v8::Object>();
+    auto mutableExports = createMutableModuleExports(js, moduleNamespace);
+
+    // Cache and return
+    mutableExportsCache.insert(moduleHash, js.v8Ref(mutableExports));
+    return mutableExports;
+  }
+
   // Used to implement the synchronous dynamic import of modules in support of APIs
   // like the CommonJS require. Returns the instantiated/evaluated module namespace.
   // If an empty v8::MaybeLocal is returned and the default option is given, then an
   // exception has been scheduled.
-  // Note that this returns the module namespace object. In CommonJS, the require()
-  // function will actually return the default export from the module namespace object.
+  // Note that this returns a mutable copy of the module namespace object to match
+  // Node.js behavior where require() returns objects with writable properties.
+  // In CommonJS, the require() function will actually return the default export
+  // from the module namespace object.
   v8::MaybeLocal<v8::Object> require(
       Lock& js, const ResolveContext& context, RequireOption option = RequireOption::DEFAULT) {
-    static constexpr auto evaluate = [](Lock& js, Entry& entry, const Url& id,
-                                         const CompilationObserver& observer,
-                                         const Module::Evaluator& maybeEvaluate) {
+    // The evaluate lambda returns the v8::Module after evaluation, not the namespace.
+    // We then convert it to a mutable exports wrapper.
+    auto evaluate = [this](Lock& js, Entry& entry, const Url& id,
+                        const CompilationObserver& observer,
+                        const Module::Evaluator& maybeEvaluate) -> v8::MaybeLocal<v8::Object> {
       auto module = entry.key.getHandle(js);
       auto status = module->GetStatus();
 
@@ -475,14 +501,14 @@ class IsolateModuleRegistry final {
       }
 
       // If the module has already been evaluated, or is in the process of being
-      // evaluated, return the module namespace object directly. Note that if the
+      // evaluated, return the mutable exports wrapper. Note that if the
       // module is a synthetic module, and status is kEvaluating, it is possible
       // and likely that the namespace has not yet been fully evaluated and will
       // be incomplete here. This allows CJS circular dependencies to be supported
       // to a degree. Just like in Node.js, however, such circular dependencies
       // can still be problematic depending on how they are used.
       if (status == v8::Module::kEvaluated || status == v8::Module::kEvaluating) {
-        return module->GetModuleNamespace().As<v8::Object>();
+        return getOrCreateMutableExports(js, module);
       }
 
       // Evaluate the module and grab the default export from the module namespace.
@@ -501,8 +527,8 @@ class IsolateModuleRegistry final {
       switch (promise->State()) {
         case v8::Promise::kFulfilled: {
           // This is what we want. The module namespace should be fully populated
-          // and evaluated at this point.
-          return module->GetModuleNamespace().As<v8::Object>();
+          // and evaluated at this point. Return a mutable wrapper.
+          return getOrCreateMutableExports(js, module);
         }
         case v8::Promise::kRejected: {
           // Oops, there was an error. We should throw it.
@@ -649,6 +675,12 @@ class IsolateModuleRegistry final {
       kj::HashIndex<ContextCallbacks>,
       kj::HashIndex<UrlCallbacks>>
       lookupCache;
+
+  // Cache for mutable module exports wrappers, keyed by v8::Module identity hash.
+  // This is used to ensure that require() returns the same mutable object for
+  // the same module, matching Node.js behavior where mutations are shared.
+  kj::HashMap<int, V8Ref<v8::Object>> mutableExportsCache;
+
   friend class SyntheticModule;
 };
 
