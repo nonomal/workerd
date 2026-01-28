@@ -229,6 +229,12 @@ wd_test(
 )
 
 wd_test(
+    src = "module-require-mutable-exports-test.wd-test",
+    args = ["--experimental"],
+    data = ["module-require-mutable-exports-test.js"],
+)
+
+wd_test(
     src = "process-exit-test.wd-test",
     args = ["--experimental"],
     data = ["process-exit-test.js"],
@@ -335,8 +341,6 @@ wd_test(
     src = "dns-nodejs-test.wd-test",
     args = ["--experimental"],
     data = ["dns-nodejs-test.js"],
-    # TODO(jsg-rs): This test breaks when RUST_BACKED_NODE_DNS is enabled.
-    generate_all_autogates_variant = False,
     tags = ["requires-network"],
 )
 
