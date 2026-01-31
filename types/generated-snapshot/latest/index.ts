@@ -1653,6 +1653,12 @@ export declare class FormData {
    *
    * [MDN Reference](https://developer.mozilla.org/docs/Web/API/FormData/append)
    */
+  append(name: string, value: string | Blob): void;
+  /**
+   * The **`append()`** method of the FormData interface appends a new value onto an existing key inside a `FormData` object, or adds the key if it does not already exist.
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/FormData/append)
+   */
   append(name: string, value: string): void;
   /**
    * The **`append()`** method of the FormData interface appends a new value onto an existing key inside a `FormData` object, or adds the key if it does not already exist.
@@ -1684,6 +1690,12 @@ export declare class FormData {
    * [MDN Reference](https://developer.mozilla.org/docs/Web/API/FormData/has)
    */
   has(name: string): boolean;
+  /**
+   * The **`set()`** method of the FormData interface sets a new value for an existing key inside a `FormData` object, or adds the key/value if it does not already exist.
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/FormData/set)
+   */
+  set(name: string, value: string | Blob): void;
   /**
    * The **`set()`** method of the FormData interface sets a new value for an existing key inside a `FormData` object, or adds the key/value if it does not already exist.
    *
@@ -2064,7 +2076,7 @@ export interface Request<
    * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Request/signal)
    */
   signal: AbortSignal;
-  cf: Cf | undefined;
+  cf?: Cf;
   /**
    * The **`integrity`** read-only property of the Request interface contains the subresource integrity value of the request.
    *
@@ -3057,9 +3069,7 @@ export interface TextDecoderStreamTextDecoderStreamInit {
  *
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/ByteLengthQueuingStrategy)
  */
-export declare class ByteLengthQueuingStrategy
-  implements QueuingStrategy<ArrayBufferView>
-{
+export declare class ByteLengthQueuingStrategy implements QueuingStrategy<ArrayBufferView> {
   constructor(init: QueuingStrategyInit);
   /**
    * The read-only **`ByteLengthQueuingStrategy.highWaterMark`** property returns the total number of bytes that can be contained in the internal queue before backpressure is applied.
@@ -6207,7 +6217,7 @@ export interface Ai_Cf_Qwen_Qwq_32B_Messages {
       }
   )[];
   /**
-   * JSON schema that should be fufilled for the response.
+   * JSON schema that should be fulfilled for the response.
    */
   guided_json?: object;
   /**
@@ -6481,7 +6491,7 @@ export interface Ai_Cf_Mistralai_Mistral_Small_3_1_24B_Instruct_Messages {
       }
   )[];
   /**
-   * JSON schema that should be fufilled for the response.
+   * JSON schema that should be fulfilled for the response.
    */
   guided_json?: object;
   /**
@@ -6574,7 +6584,7 @@ export interface Ai_Cf_Google_Gemma_3_12B_It_Prompt {
    */
   prompt: string;
   /**
-   * JSON schema that should be fufilled for the response.
+   * JSON schema that should be fulfilled for the response.
    */
   guided_json?: object;
   /**
@@ -6738,7 +6748,7 @@ export interface Ai_Cf_Google_Gemma_3_12B_It_Messages {
       }
   )[];
   /**
-   * JSON schema that should be fufilled for the response.
+   * JSON schema that should be fulfilled for the response.
    */
   guided_json?: object;
   /**
@@ -7019,7 +7029,7 @@ export interface Ai_Cf_Meta_Llama_4_Scout_17B_16E_Instruct_Messages {
   )[];
   response_format?: Ai_Cf_Meta_Llama_4_Scout_17B_16E_Instruct_JSON_Mode;
   /**
-   * JSON schema that should be fufilled for the response.
+   * JSON schema that should be fulfilled for the response.
    */
   guided_json?: object;
   /**
@@ -7258,7 +7268,7 @@ export interface Ai_Cf_Meta_Llama_4_Scout_17B_16E_Instruct_Messages_Inner {
   )[];
   response_format?: Ai_Cf_Meta_Llama_4_Scout_17B_16E_Instruct_JSON_Mode;
   /**
-   * JSON schema that should be fufilled for the response.
+   * JSON schema that should be fulfilled for the response.
    */
   guided_json?: object;
   /**
@@ -8346,7 +8356,7 @@ export interface Ai_Cf_Ai4Bharat_Indictrans2_En_Indic_1B_Input {
    */
   text: string | string[];
   /**
-   * Target langauge to translate to
+   * Target language to translate to
    */
   target_language:
     | "asm_Beng"
@@ -9750,8 +9760,7 @@ export interface RequestInitCfProperties extends Record<string, unknown> {
    */
   resolveOverride?: string;
 }
-export interface RequestInitCfPropertiesImageDraw
-  extends BasicImageTransformations {
+export interface RequestInitCfPropertiesImageDraw extends BasicImageTransformations {
   /**
    * Absolute URL of the image file to use for the drawing. It can be any of
    * the supported file formats. For drawing of watermarks or non-rectangular
@@ -9788,8 +9797,7 @@ export interface RequestInitCfPropertiesImageDraw
   bottom?: number;
   right?: number;
 }
-export interface RequestInitCfPropertiesImage
-  extends BasicImageTransformations {
+export interface RequestInitCfPropertiesImage extends BasicImageTransformations {
   /**
    * Device Pixel Ratio. Default 1. Multiplier for width/height that makes it
    * easier to specify higher-DPI sizes in <img srcset>.
@@ -9974,8 +9982,10 @@ export type IncomingRequestCfProperties<HostMetadata = unknown> =
     IncomingRequestCfPropertiesCloudflareForSaaSEnterprise<HostMetadata> &
     IncomingRequestCfPropertiesGeographicInformation &
     IncomingRequestCfPropertiesCloudflareAccessOrApiShield;
-export interface IncomingRequestCfPropertiesBase
-  extends Record<string, unknown> {
+export interface IncomingRequestCfPropertiesBase extends Record<
+  string,
+  unknown
+> {
   /**
    * [ASN](https://www.iana.org/assignments/as-numbers/as-numbers.xhtml) of the incoming request.
    *
@@ -10092,8 +10102,7 @@ export interface IncomingRequestCfPropertiesBotManagement {
    */
   clientTrustScore: number;
 }
-export interface IncomingRequestCfPropertiesBotManagementEnterprise
-  extends IncomingRequestCfPropertiesBotManagement {
+export interface IncomingRequestCfPropertiesBotManagementEnterprise extends IncomingRequestCfPropertiesBotManagement {
   /**
    * Results of Cloudflare's Bot Management analysis
    */
@@ -10658,6 +10667,10 @@ export interface D1Meta {
    */
   served_by_region?: string;
   /**
+   * The three letters airport code of the colo that executed the query.
+   */
+  served_by_colo?: string;
+  /**
    * True if-and-only-if the database instance that executed the query was the primary.
    */
   served_by_primary?: boolean;
@@ -10742,6 +10755,15 @@ export declare abstract class D1PreparedStatement {
 // ignored when `Disposable` is included in the standard lib.
 export interface Disposable {}
 /**
+ * The returned data after sending an email
+ */
+export interface EmailSendResult {
+  /**
+   * The Email Message ID
+   */
+  messageId: string;
+}
+/**
  * An email message that can be sent from a Worker.
  */
 export interface EmailMessage {
@@ -10782,19 +10804,52 @@ export interface ForwardableEmailMessage extends EmailMessage {
    * @param headers A [Headers object](https://developer.mozilla.org/en-US/docs/Web/API/Headers).
    * @returns A promise that resolves when the email message is forwarded.
    */
-  forward(rcptTo: string, headers?: Headers): Promise<void>;
+  forward(rcptTo: string, headers?: Headers): Promise<EmailSendResult>;
   /**
    * Reply to the sender of this email message with a new EmailMessage object.
    * @param message The reply message.
    * @returns A promise that resolves when the email message is replied.
    */
-  reply(message: EmailMessage): Promise<void>;
+  reply(message: EmailMessage): Promise<EmailSendResult>;
+}
+/** A file attachment for an email message */
+export type EmailAttachment =
+  | {
+      disposition: "inline";
+      contentId: string;
+      filename: string;
+      type: string;
+      content: string | ArrayBuffer | ArrayBufferView;
+    }
+  | {
+      disposition: "attachment";
+      contentId?: undefined;
+      filename: string;
+      type: string;
+      content: string | ArrayBuffer | ArrayBufferView;
+    };
+/** An Email Address */
+export interface EmailAddress {
+  name: string;
+  email: string;
 }
 /**
  * A binding that allows a Worker to send email messages.
  */
 export interface SendEmail {
-  send(message: EmailMessage): Promise<void>;
+  send(message: EmailMessage): Promise<EmailSendResult>;
+  send(builder: {
+    from: string | EmailAddress;
+    to: string | string[];
+    subject: string;
+    replyTo?: string | EmailAddress;
+    cc?: string | string[];
+    bcc?: string | string[];
+    headers?: Record<string, string>;
+    text?: string;
+    html?: string;
+    attachments?: EmailAttachment[];
+  }): Promise<EmailSendResult>;
 }
 export declare abstract class EmailEvent extends ExtendableEvent {
   readonly message: ForwardableEmailMessage;
@@ -10824,7 +10879,7 @@ export interface Hyperdrive {
   /**
    * Connect directly to Hyperdrive as if it's your database, returning a TCP socket.
    *
-   * Calling this method returns an idential socket to if you call
+   * Calling this method returns an identical socket to if you call
    * `connect("host:port")` using the `host` and `port` fields from this object.
    * Pick whichever approach works better with your preferred DB client library.
    *
@@ -11549,7 +11604,8 @@ export declare namespace CloudflareWorkersModule {
   export abstract class WorkflowEntrypoint<
     Env = unknown,
     T extends Rpc.Serializable<T> | unknown = unknown,
-  > implements Rpc.WorkflowEntrypointBranded
+  >
+    implements Rpc.WorkflowEntrypointBranded
   {
     [Rpc.__WORKFLOW_ENTRYPOINT_BRAND]: never;
     protected ctx: ExecutionContext;
@@ -11774,6 +11830,15 @@ export declare namespace TailStream {
     readonly level: "debug" | "error" | "info" | "log" | "warn";
     readonly message: object;
   }
+  interface DroppedEventsDiagnostic {
+    readonly diagnosticsType: "droppedEvents";
+    readonly count: number;
+  }
+  interface StreamDiagnostic {
+    readonly type: "streamDiagnostic";
+    // To add new diagnostic types, define a new interface and add it to this union type.
+    readonly diagnostic: DroppedEventsDiagnostic;
+  }
   // This marks the worker handler return information.
   // This is separate from Outcome because the worker invocation can live for a long time after
   // returning. For example - Websockets that return an http upgrade response but then continue
@@ -11806,6 +11871,7 @@ export declare namespace TailStream {
     | DiagnosticChannelEvent
     | Exception
     | Log
+    | StreamDiagnostic
     | Return
     | Attributes;
   // Context in which this trace event lives.
@@ -11821,7 +11887,7 @@ export declare namespace TailStream {
     // For Hibernate and Mark this would be the span under which they were emitted.
     // spanId is not set ONLY if:
     //  1. This is an Onset event
-    //  2. We are not inherting any SpanContext. (e.g. this is a cross-account service binding or a new top-level invocation)
+    //  2. We are not inheriting any SpanContext. (e.g. this is a cross-account service binding or a new top-level invocation)
     readonly spanId?: string;
   }
   interface TailEvent<Event extends EventType> {

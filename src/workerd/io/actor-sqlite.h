@@ -96,6 +96,7 @@ class ActorSqlite final: public ActorCacheInterface, private kj::TaskSet::ErrorH
   void shutdown(kj::Maybe<const kj::Exception&> maybeException) override;
   kj::OneOf<CancelAlarmHandler, RunAlarmHandler> armAlarmHandler(kj::Date scheduledTime,
       SpanParent parentSpan,
+      kj::Date currentTime,
       bool noCache = false,
       kj::StringPtr actorId = "") override;
   void cancelDeferredAlarmDeletion() override;
@@ -157,6 +158,9 @@ class ActorSqlite final: public ActorCacheInterface, private kj::TaskSet::ErrorH
     bool getAlarmDirty();
     void setAlarmDirty();
 
+    void setSomeWriteConfirmed(bool someWriteConfirmed);
+    bool isSomeWriteConfirmed() const;
+
     kj::Maybe<kj::Promise<void>> commit() override;
     kj::Promise<void> rollback() override;
     // Implements ActorCacheInterface::Transaction.
@@ -190,6 +194,8 @@ class ActorSqlite final: public ActorCacheInterface, private kj::TaskSet::ErrorH
     bool hasChild = false;
     bool committed = false;
     bool alarmDirty = false;
+    // True if any of the writes in this commit are confirmed writes.
+    bool someWriteConfirmed = false;
 
     void rollbackImpl();
   };

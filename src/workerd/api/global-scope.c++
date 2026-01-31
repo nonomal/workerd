@@ -438,8 +438,9 @@ kj::Promise<WorkerInterface::AlarmResult> ServiceWorkerGlobalScope::runAlarm(kj:
     }
   }
 
+  auto currentTime = context.now();
   KJ_SWITCH_ONEOF(persistent.armAlarmHandler(
-                      scheduledTime, context.getCurrentTraceSpan(), false, actorId)) {
+                      scheduledTime, context.getCurrentTraceSpan(), currentTime, false, actorId)) {
     KJ_CASE_ONEOF(armResult, ActorCacheInterface::RunAlarmHandler) {
       auto& handler = KJ_REQUIRE_NONNULL(exportedHandler);
       if (handler.alarm == kj::none) {
@@ -928,8 +929,11 @@ jsg::JsValue ServiceWorkerGlobalScope::getBuffer(jsg::Lock& js) {
       // that set the bufferValue, we let's check again.
       return p.getHandle(js);
     }
-    auto def = module.get(js, "default"_kj);
-    auto obj = KJ_ASSERT_NONNULL(def.tryCast<jsg::JsObject>());
+    // When requireReturnsDefaultExport flag is enabled, resolveModule returns the
+    // default export directly. Otherwise it returns the module namespace.
+    auto obj = module.has(js, "default"_kj)
+        ? KJ_ASSERT_NONNULL(module.get(js, "default"_kj).tryCast<jsg::JsObject>())
+        : module;
     auto buffer = obj.get(js, "Buffer"_kj);
     JSG_REQUIRE(buffer.isFunction(), TypeError, "Invalid node:buffer implementation");
     bufferValue = jsg::JsRef(js, buffer);
@@ -970,7 +974,9 @@ jsg::JsValue ServiceWorkerGlobalScope::getProcess(jsg::Lock& js) {
       // that set the processValue, we let's check again.
       return p.getHandle(js);
     }
-    auto def = module.get(js, "default"_kj);
+    // When requireReturnsDefaultExport flag is enabled, resolveInternalModule returns the
+    // default export directly. Otherwise it returns the module namespace.
+    auto def = module.has(js, "default"_kj) ? module.get(js, "default"_kj) : jsg::JsValue(module);
     JSG_REQUIRE(def.isObject(), TypeError, "Invalid node:process implementation");
     processValue = jsg::JsRef(js, def);
     return def;

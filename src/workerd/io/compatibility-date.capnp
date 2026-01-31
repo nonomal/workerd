@@ -1130,7 +1130,7 @@ struct CompatibilityFlags @0x8f8c1b68151b6cef {
   enableNodeJsStreamWrapModule @131 :Bool
     $compatEnableFlag("enable_nodejs_stream_wrap_module")
     $compatDisableFlag("disable_nodejs_stream_wrap_module")
-    $experimental;
+    $impliedByAfterDate(name = "nodeJsCompat", date = "2026-01-29");
   # Enables the Node.js non-functional stub _stream_wrap module. It is required to use this
   # flag with nodejs_compat (or nodejs_compat_v2).
 
@@ -1144,14 +1144,14 @@ struct CompatibilityFlags @0x8f8c1b68151b6cef {
   enableNodeJsDgramModule @133 :Bool
     $compatEnableFlag("enable_nodejs_dgram_module")
     $compatDisableFlag("disable_nodejs_dgram_module")
-    $experimental;
+    $impliedByAfterDate(name = "nodeJsCompat", date = "2026-01-29");
   # Enables the Node.js non-functional stub dgram module. It is required to use this
   # flag with nodejs_compat (or nodejs_compat_v2).
 
   enableNodeJsInspectorModule @134 :Bool
     $compatEnableFlag("enable_nodejs_inspector_module")
     $compatDisableFlag("disable_nodejs_inspector_module")
-    $experimental;
+    $impliedByAfterDate(name = "nodeJsCompat", date = "2026-01-29");
   # Enables the Node.js non-functional stub inspector module. It is required to use this
   # flag with nodejs_compat (or nodejs_compat_v2).
 
@@ -1179,7 +1179,7 @@ struct CompatibilityFlags @0x8f8c1b68151b6cef {
   enableNodeJsSqliteModule @138 :Bool
     $compatEnableFlag("enable_nodejs_sqlite_module")
     $compatDisableFlag("disable_nodejs_sqlite_module")
-    $experimental;
+    $impliedByAfterDate(name = "nodeJsCompat", date = "2026-01-29");
   # Enables the Node.js non-functional stub sqlite module. It is required to use this
   # flag with nodejs_compat (or nodejs_compat_v2).
 
@@ -1310,10 +1310,49 @@ struct CompatibilityFlags @0x8f8c1b68151b6cef {
   enableNodejsGlobalTimers @153 :Bool
     $compatEnableFlag("enable_nodejs_global_timers")
     $compatDisableFlag("no_nodejs_global_timers")
-    $experimental;
-  # When enabled, all 6 timer functions (setTimeout, setInterval, clearTimeout,
-  # clearInterval, setImmediate, clearImmediate) are available on globalThis as
-  # Node.js-compatible versions from node:timers. setTimeout and setInterval return
-  # Timeout objects with methods like refresh(), ref(), unref(), and hasRef().
+    $impliedByAfterDate(name = "nodeJsCompat", date = "2026-02-10");
+  # When enabled, setTimeout, setInterval, clearTimeout, and clearInterval
+  # are available on globalThis as Node.js-compatible versions from node:timers.
+  # setTimeout and setInterval return Timeout objects with methods like
+  # refresh(), ref(), unref(), and hasRef().
   # This flag requires nodejs_compat or nodejs_compat_v2 to be enabled.
+
+  noAutoAllocateChunkSize @154 :Bool
+    $compatEnableFlag("streams_no_default_auto_allocate_chunk_size")
+    $compatDisableFlag("streams_auto_allocate_chunk_size_default")
+    $experimental;
+  # Per the WHATWG Streams spec, byte streams should only have autoAllocateChunkSize
+  # set when the user explicitly provides it. When not set, non-BYOB reads on byte
+  # streams won't have a byobRequest available in the pull() callback, and the
+  # underlying source must use controller.enqueue() to provide data instead.
+  #
+  # Our original implementation always defaulted autoAllocateChunkSize to 4096,
+  # which meant all byte stream reads behaved as BYOB reads. This flag enables
+  # the spec-compliant behavior where autoAllocateChunkSize is only set when
+  # explicitly provided by the user.
+  #
+  # Code relying on the old behavior that accesses controller.byobRequest without
+  # checking for null will break. To migrate, either:
+  # 1. Add a null check: if (controller.byobRequest) { ... }
+  # 2. Explicitly set autoAllocateChunkSize when creating the stream
+
+  pythonWorkflowsImplicitDeps @155 :Bool
+    $compatEnableFlag("python_workflows_implicit_dependencies")
+    $compatDisableFlag("no_python_workflows_implicit_dependencies")
+    $impliedByAfterDate(name = "pythonWorkers", date = "2026-02-25");
+  # replaces depends param on steps to an implicit approach with step callables passed as params
+  # these steps are called internally and act as dependencies
+
+  requireReturnsDefaultExport @156 :Bool
+    $compatEnableFlag("require_returns_default_export")
+    $compatDisableFlag("require_returns_namespace")
+    $compatEnableDate("2026-01-22");
+  # When enabled, require() will return the default export of a module if it exists.
+  # If the default export does not exist, it falls back to returning a mutable
+  # copy of the module namespace object. This matches the behavior that Node.js
+  # uses for require(esm) where the default export is returned when available.
+  # This flag is useful for frameworks like Next.js that expect to patch module exports.
+  #
+  # TODO(later): Once this is no longer experimental, this flag should be implied by
+  # exportCommonJsDefaultNamespace (or vice versa) for consistency.
 }
